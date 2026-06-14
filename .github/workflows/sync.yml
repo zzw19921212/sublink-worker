@@ -1,0 +1,34 @@
+name: Upstream Sync
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 每天 UTC 时间 0 点自动运行（北京时间早上 8 点）
+  workflow_dispatch: # 允许手动点击触发
+
+jobs:
+  sync_latest_from_upstream:
+    name: Sync latest commits from upstream repo
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork }}
+
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          upstream_sync_repo: 7Sageer/sublink-worker # 上游原仓库地址
+          upstream_sync_branch: main                 # 上游仓库的主分支
+          target_sync_branch: main                   # 你自己仓库的主分支
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
+          
+          test_mode: false
+
+      - name: Sync check
+        if: failure()
+        run: echo "[Error] 同步失败！上游代码可能与你自己的修改发生了冲突，需要手动介入处理。"
